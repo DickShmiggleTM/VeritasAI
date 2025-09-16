@@ -30,3 +30,17 @@ export interface HistoryItem {
 }
 
 export type ResearchDepth = 'surface' | 'moderate' | 'deep';
+export type SearchType = 'web' | 'deep';
+export type ModelProvider = 'gemini' | 'ollama';
+
+export interface Note {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  content: string;
+}

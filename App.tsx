@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { conductResearch } from './services/geminiService';
-import type { HistoryItem, ResearchDepth, Source, KnowledgeGraph } from './types';
+import * as geminiService from './services/geminiService';
+import * as ollamaService from './services/ollamaService';
+import type { HistoryItem, ResearchDepth, Source, KnowledgeGraph, SearchType, Note, ModelProvider, Document } from './types';
 
 import { ResearchInput } from './components/ResearchInput';
 import { ResultDisplay } from './components/ResultDisplay';
@@ -9,37 +10,56 @@ import { DepthSelector } from './components/DepthSelector';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { GemSymbol } from './components/GemSymbol';
 import { KnowledgeGraphPanel } from './components/KnowledgeGraphPanel';
+import { SearchTypeSelector } from './components/SearchTypeSelector';
+import { NotesPanel } from './components/NotesPanel';
+import { ModelProviderSelector } from './components/ModelProviderSelector';
+import { DocumentManager } from './components/DocumentManager';
 
 const App: React.FC = () => {
   const [topic, setTopic] = useState<string>('');
   const [depth, setDepth] = useState<ResearchDepth>('moderate');
+  const [searchType, setSearchType] = useState<SearchType>('web');
+  const [provider, setProvider] = useState<ModelProvider>('gemini');
+  const [ollamaModel, setOllamaModel] = useState<string>('llama2');
   const [result, setResult] = useState<string>('');
   const [sources, setSources] = useState<Source[]>([]);
   const [graph, setGraph] = useState<KnowledgeGraph | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
-  // Load history from local storage on mount
+  // Load data from local storage on mount
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('researchHistory');
-      if (savedHistory) {
-        setHistory(JSON.parse(savedHistory));
-      }
+      if (savedHistory) setHistory(JSON.parse(savedHistory));
+
+      const savedNotes = localStorage.getItem('researchNotes');
+      if (savedNotes) setNotes(JSON.parse(savedNotes));
+
+      const savedProvider = localStorage.getItem('modelProvider');
+      if (savedProvider) setProvider(savedProvider as ModelProvider);
+
+      const savedOllamaModel = localStorage.getItem('ollamaModel');
+      if (savedOllamaModel) setOllamaModel(savedOllamaModel);
     } catch (error) {
-      console.error("Failed to load history from local storage:", error);
+      console.error("Failed to load data from local storage:", error);
     }
   }, []);
 
-  // Save history to local storage on change
+  // Save data to local storage on change
   useEffect(() => {
     try {
       localStorage.setItem('researchHistory', JSON.stringify(history));
+      localStorage.setItem('researchNotes', JSON.stringify(notes));
+      localStorage.setItem('modelProvider', provider);
+      localStorage.setItem('ollamaModel', ollamaModel);
     } catch (error) {
-      console.error("Failed to save history to local storage:", error);
+      console.error("Failed to save data to local storage:", error);
     }
-  }, [history]);
+  }, [history, notes, provider, ollamaModel]);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -59,15 +79,27 @@ const App: React.FC = () => {
 
   const handleSubmit = useCallback(async () => {
     if (!topic.trim() || isLoading) return;
+    if (provider === 'ollama' && !ollamaModel.trim()) {
+      setResult("Please enter an Ollama model name.");
+      return;
+    }
 
     setIsLoading(true);
     setResult('');
     setSources([]);
     setGraph(null);
 
+    const documentContext = documents.map(d => `Document "${d.name}":\n${d.content}`).join('\n\n');
+
     try {
-      const { result, sources, graph } = await conductResearch(topic, depth);
+      let researchResult;
+      if (provider === 'gemini') {
+        researchResult = await geminiService.conductResearch(topic, depth, searchType, documentContext);
+      } else {
+        researchResult = await ollamaService.conductResearch(topic, depth, searchType, ollamaModel, documentContext);
+      }
       
+      const { result, sources, graph } = researchResult;
       setResult(result);
       setSources(sources);
       setGraph(graph);
@@ -90,7 +122,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [topic, depth, isLoading]);
+  }, [topic, depth, searchType, isLoading, provider, ollamaModel, documents]);
 
   const handleSelectHistory = useCallback((item: HistoryItem) => {
     setTopic(item.topic);
@@ -106,6 +138,31 @@ const App: React.FC = () => {
         item.id === itemId ? { ...item, tags: newTags } : item
       )
     );
+  }, []);
+
+  const handleAddDocument = useCallback((doc: Document) => {
+    setDocuments(prev => [...prev, doc]);
+  }, []);
+
+  const handleDeleteDocument = useCallback((id: string) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== id));
+  }, []);
+
+  const handleAddNote = useCallback((content: string) => {
+    const newNote: Note = {
+      id: Date.now().toString(),
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    setNotes(prev => [newNote, ...prev]);
+  }, []);
+
+  const handleUpdateNote = useCallback((id: string, content: string) => {
+    setNotes(prev => prev.map(note => note.id === id ? { ...note, content } : note));
+  }, []);
+
+  const handleDeleteNote = useCallback((id: string) => {
+    setNotes(prev => prev.filter(note => note.id !== id));
   }, []);
 
   const handleToggleBookmark = useCallback((itemId: string) => {
@@ -156,8 +213,13 @@ const App: React.FC = () => {
   return (
     <div className="bg-slate-950 text-slate-300 min-h-screen font-sans bg-[radial-gradient(circle_at_1px_1px,_#334155_1px,_transparent_0)] [background-size:24px_24px]">
       <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-          <div className="lg:col-span-1 lg:sticky top-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          <div className="lg:col-span-1 lg:sticky top-6 flex flex-col gap-6">
+            <DocumentManager
+              documents={documents}
+              onAddDocument={handleAddDocument}
+              onRemoveDocument={handleDeleteDocument}
+            />
             <HistoryPanel
               history={filteredHistory}
               allTags={allTags}
@@ -193,6 +255,18 @@ const App: React.FC = () => {
                 onDepthChange={setDepth}
                 isLoading={isLoading}
               />
+              <SearchTypeSelector
+                searchType={searchType}
+                onSearchTypeChange={setSearchType}
+                isLoading={isLoading}
+              />
+              <ModelProviderSelector
+                provider={provider}
+                onProviderChange={setProvider}
+                ollamaModel={ollamaModel}
+                onOllamaModelChange={setOllamaModel}
+                isLoading={isLoading}
+              />
             </div>
 
             {isLoading && <LoadingSpinner />}
@@ -207,6 +281,14 @@ const App: React.FC = () => {
           </main>
           <div className="lg:col-span-1 lg:sticky top-6">
             <KnowledgeGraphPanel graph={graph} />
+          </div>
+          <div className="lg:col-span-1 lg:sticky top-6 h-[calc(100vh-3rem)]">
+            <NotesPanel
+              notes={notes}
+              onAddNote={handleAddNote}
+              onUpdateNote={handleUpdateNote}
+              onDeleteNote={handleDeleteNote}
+            />
           </div>
         </div>
       </div>
