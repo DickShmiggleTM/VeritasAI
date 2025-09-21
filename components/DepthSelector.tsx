@@ -1,5 +1,6 @@
 import React from 'react';
-import type { ResearchDepth } from '../types';
+// FIX: Added .ts extension to fix module resolution error.
+import type { ResearchDepth } from '../types.ts';
 
 interface DepthSelectorProps {
   selectedDepth: ResearchDepth;

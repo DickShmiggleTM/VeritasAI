@@ -1,25 +1,23 @@
-import type { Part } from "@google/genai";
-
 export type ResearchDepth = 'surface' | 'moderate' | 'deep';
 
 export interface Source {
-  title: string;
   url: string;
-  justification: string;
+  title: string;
   confidenceScore: number;
+  justification: string;
 }
 
 export interface KnowledgeGraphNode {
   id: string;
   name: string;
   type: string;
-  details: string;
+  description?: string;
 }
 
 export interface KnowledgeGraphLink {
   source: string;
   target: string;
-  relationship: string;
+  label: string;
 }
 
 export interface KnowledgeGraphData {
@@ -28,49 +26,47 @@ export interface KnowledgeGraphData {
 }
 
 export interface ResearchResult {
-  phenomenologicalSummary: string;
-  metaphysicalFrameworkAnalysis: string;
-  symbolicResonanceMapping: string;
-  archetypeFrequencyAnalysis: string;
-  technologyDeconstruction: string[];
-  firstPrinciplesHypothesis: string[];
-  experimentalProtocols: string[];
+  summary: string;
+  graphData: KnowledgeGraphData;
   sources: Source[];
-  knowledgeGraph: KnowledgeGraphData;
 }
 
 export interface HistoryItem {
   id: string;
   topic: string;
+  documentName?: string;
+  imageQuery?: boolean;
   timestamp: string;
+  depth: ResearchDepth;
   result: ResearchResult;
-  imageName?: string;
 }
 
 export type AiProvider = 'google' | 'ollama' | 'mistral' | 'cohere' | 'openrouter' | 'huggingface' | 'chutes';
+export type AiProviderWithKeys = 'mistral' | 'cohere' | 'openrouter' | 'huggingface' | 'chutes';
+
+export interface ApiKeyEntry {
+  key: string;
+  errorCount: number;
+}
 
 export interface Settings {
   provider: AiProvider;
-  apiKeys: {
-    mistral: string;
-    cohere: string;
-    openrouter: string;
-    huggingface: string;
-    chutes: string;
-  };
-  models: {
-    google: string;
-    ollama: string;
-    mistral: string;
-    cohere: string;
-    openrouter: string;
-    huggingface: string;
-    chutes: string;
-  };
+  activeProvider: AiProvider;
+  activeApiKeyIndex: Record<AiProviderWithKeys, number>;
+  apiKeys: Record<AiProviderWithKeys, ApiKeyEntry[]>;
+  models: Record<AiProvider, string>;
   ollama: {
     serverUrl: string;
     availableModels: string[];
   };
   theme: 'dark' | 'light';
   showTooltips: boolean;
+}
+
+export interface LocalDocument {
+  id: string;
+  name:string;
+  content: string;
+  embedding?: number[];
+  createdAt: string;
 }

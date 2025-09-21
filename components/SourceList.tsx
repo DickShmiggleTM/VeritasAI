@@ -1,5 +1,6 @@
 import React from 'react';
-import type { Source } from '../types';
+// FIX: Added .ts extension to fix module resolution error.
+import type { Source } from '../types.ts';
 
 interface SourceListProps {
   sources: Source[];

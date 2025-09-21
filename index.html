@@ -17,6 +17,7 @@
               'codex-gold': '#d4af37',
               'codex-red': '#a42a2a',
               'codex-teal': '#00d1b2',
+              'codex-green': '#28a745',
             },
             fontFamily: {
               sans: ['"Source Code Pro"', 'monospace'],
@@ -25,6 +26,8 @@
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out forwards',
               'glow': 'glow 2.5s ease-in-out infinite alternate',
+              'subtle-pulse': 'subtlePulse 3s ease-in-out infinite',
+              'rotate-slow': 'rotateSlow 20s linear infinite',
             },
             keyframes: {
               fadeIn: {
@@ -34,6 +37,14 @@
                glow: {
                 'from': { 'text-shadow': '0 0 4px #00d1b2, 0 0 8px #00d1b2, 0 0 12px #00d1b2' },
                 'to': { 'text-shadow': '0 0 8px #4a3b8e, 0 0 16px #4a3b8e, 0 0 24px #4a3b8e' }
+              },
+              subtlePulse: {
+                '0%, 100%': { opacity: '0.7' },
+                '50%': { opacity: '1' },
+              },
+              rotateSlow: {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
               }
             }
           }
@@ -46,20 +57,70 @@
     <style>
       body {
         font-family: 'Source Code Pro', monospace;
+        background-color: #0a0f1f;
+        background-image: 
+          radial-gradient(circle at 25px 25px, rgba(0, 209, 178, 0.1) 2%, transparent 0%), 
+          radial-gradient(circle at 75px 75px, rgba(74, 59, 142, 0.1) 2%, transparent 0%);
+        background-size: 100px 100px;
+      }
+      /* Custom scrollbar for a more thematic feel */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0a0f1f;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #1a2c4a;
+        border-radius: 4px;
+        border: 1px solid #4a3b8e;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #4a3b8e;
+      }
+
+      /* Thematic container style */
+      .technomancer-container {
+        border: 1px solid;
+        border-image-slice: 1;
+        border-width: 1px;
+        border-image-source: linear-gradient(to bottom, #4a3b8e, #00d1b2);
+        background: rgba(10, 15, 31, 0.8);
+        backdrop-filter: blur(2px);
+        box-shadow: 0 0 15px rgba(0, 209, 178, 0.1);
+      }
+      .technomancer-section {
+        border-top: 1px solid;
+        border-image-slice: 1;
+        border-image-source: linear-gradient(to right, #4a3b8e, #00d1b2);
+        padding-top: 1.5rem;
       }
     </style>
 
-    <script type="importmap">
-    {
-      "imports": {
-        "react-force-graph-3d": "https://aistudiocdn.com/react-force-graph-3d@^1.29.0",
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
-        "react/": "https://aistudiocdn.com/react@^19.1.1/",
-        "react": "https://aistudiocdn.com/react@^19.1.1"
+    <!-- PDF and DOCX parsing libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script>
+      // Configure the PDF.js worker
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
       }
-    }
     </script>
+
+    <script type="importmap">
+{
+  "imports": {
+    "react-force-graph-3d": "https://aistudiocdn.com/react-force-graph-3d@^1.29.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "immer": "https://aistudiocdn.com/immer@^10.1.3",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0"
+  }
+}
+</script>
     <script type="module" src="/index.tsx"></script>
 </head>
 <body class="bg-codex-dark">

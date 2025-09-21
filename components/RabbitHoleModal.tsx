@@ -1,5 +1,6 @@
 import React from 'react';
-import type { KnowledgeGraphNode } from '../types';
+// FIX: Added .ts extension to fix module resolution error.
+import type { KnowledgeGraphNode } from '../types.ts';
 
 interface RabbitHoleModalProps {
   isOpen: boolean;

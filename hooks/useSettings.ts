@@ -1,16 +1,25 @@
 import { useState, useEffect } from 'react';
-import type { Settings } from '../types';
+// FIX: Added .ts extension to fix module resolution error.
+import type { Settings, ApiKeyEntry, AiProviderWithKeys } from '../types.ts';
 
 const SETTINGS_KEY = 'codexVeritasAiSettings_v1';
 
 const defaultSettings: Settings = {
   provider: 'google',
+  activeProvider: 'google',
+  activeApiKeyIndex: {
+    mistral: 0,
+    cohere: 0,
+    openrouter: 0,
+    huggingface: 0,
+    chutes: 0,
+  },
   apiKeys: {
-    mistral: '',
-    cohere: '',
-    openrouter: '',
-    huggingface: '',
-    chutes: '',
+    mistral: [],
+    cohere: [],
+    openrouter: [],
+    huggingface: [],
+    chutes: [],
   },
   models: {
     google: 'gemini-2.5-flash',
@@ -29,17 +38,37 @@ const defaultSettings: Settings = {
   showTooltips: true,
 };
 
+const providersWithKeys: AiProviderWithKeys[] = ['mistral', 'cohere', 'openrouter', 'huggingface', 'chutes'];
+
 export const useSettings = () => {
   const [settings, setSettings] = useState<Settings>(() => {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        // Basic migration: ensure all keys from default settings are present
-        const migratedSettings = { ...defaultSettings, ...parsed };
-        migratedSettings.apiKeys = { ...defaultSettings.apiKeys, ...parsed.apiKeys };
-        migratedSettings.models = { ...defaultSettings.models, ...parsed.models };
-        return migratedSettings;
+        let parsed = JSON.parse(stored);
+
+        // --- MIGRATION LOGIC from single key string to ApiKeyEntry[] ---
+        if (parsed.apiKeys && typeof parsed.apiKeys.mistral === 'string') {
+          console.log("Migrating old settings format...");
+          const migratedApiKeys: { [key in AiProviderWithKeys]: ApiKeyEntry[] } = {
+            mistral: [], cohere: [], openrouter: [], huggingface: [], chutes: []
+          };
+          for (const provider of providersWithKeys) {
+              if (parsed.apiKeys[provider] && typeof parsed.apiKeys[provider] === 'string') {
+                  migratedApiKeys[provider] = [{ key: parsed.apiKeys[provider], errorCount: 0 }];
+              }
+          }
+          parsed.apiKeys = migratedApiKeys;
+        }
+        
+        // Merge with defaults to ensure all new keys/structures are present
+        const mergedSettings = { ...defaultSettings, ...parsed };
+        mergedSettings.apiKeys = { ...defaultSettings.apiKeys, ...parsed.apiKeys };
+        mergedSettings.models = { ...defaultSettings.models, ...parsed.models };
+        mergedSettings.activeApiKeyIndex = { ...defaultSettings.activeApiKeyIndex, ...parsed.activeApiKeyIndex };
+        mergedSettings.ollama = { ...defaultSettings.ollama, ...parsed.ollama };
+        
+        return mergedSettings;
       }
       return defaultSettings;
     } catch (error) {

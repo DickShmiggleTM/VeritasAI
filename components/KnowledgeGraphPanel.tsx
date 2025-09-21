@@ -1,77 +1,123 @@
+import React, { Suspense, lazy, useState, useMemo, useEffect } from 'react';
+import type { KnowledgeGraphData, KnowledgeGraphNode } from '../types.ts';
+import { GraphFilterControls } from './GraphFilterControls.tsx';
 
-import React, { Suspense, useMemo, useState } from 'react';
-import type { KnowledgeGraphData, KnowledgeGraphNode } from '../types';
-import { LoadingSpinner } from './LoadingSpinner';
-
-const KnowledgeGraph3D = React.lazy(() => import('./KnowledgeGraph3D'));
+const KnowledgeGraph3D = lazy(() => import('./KnowledgeGraph3D.tsx'));
 
 interface KnowledgeGraphPanelProps {
   graphData: KnowledgeGraphData;
-  isVisible: boolean;
-  onToggleVisibility: () => void;
-  onNodeClick: (node: KnowledgeGraphNode) => void;
+  onNodeSelect: (node: KnowledgeGraphNode) => void;
 }
 
-export const KnowledgeGraphPanel: React.FC<KnowledgeGraphPanelProps> = ({ graphData, isVisible, onToggleVisibility, onNodeClick }) => {
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+export const KnowledgeGraphPanel: React.FC<KnowledgeGraphPanelProps> = ({ graphData, onNodeSelect }) => {
+  const [nodeTypeFilters, setNodeTypeFilters] = useState<Record<string, boolean>>({});
+  const [collapsedNodes, setCollapsedNodes] = useState(new Set<string>());
 
-  const nodeTypes = useMemo<string[]>(() => {
-    // FIX: Used a type guard in the filter to ensure TypeScript correctly infers the array type as string[], resolving the 'unknown[]' error.
-    const types = new Set(graphData.nodes.map(n => n.type).filter((type): type is string => !!type));
-    return ['All', ...Array.from(types)];
+  const nodeTypes = useMemo(() => {
+    const types = new Set(graphData.nodes.map(n => n.type));
+    return Array.from(types).sort();
   }, [graphData.nodes]);
 
-  const filteredData = useMemo(() => {
-    if (!activeFilter || activeFilter === 'All') {
-      return graphData;
+  useEffect(() => {
+    setNodeTypeFilters(
+      nodeTypes.reduce((acc, type) => ({ ...acc, [type]: true }), {})
+    );
+    setCollapsedNodes(new Set());
+  }, [nodeTypes]);
+
+  const handleFilterChange = (type: string, isEnabled: boolean) => {
+    setNodeTypeFilters(prev => ({ ...prev, [type]: isEnabled }));
+  };
+
+  const handleNodeToggleCollapse = (node: KnowledgeGraphNode) => {
+    const newCollapsedNodes = new Set(collapsedNodes);
+    if (newCollapsedNodes.has(node.id)) {
+      newCollapsedNodes.delete(node.id);
+    } else {
+      newCollapsedNodes.add(node.id);
     }
-    const filteredNodes = graphData.nodes.filter(node => node.type === activeFilter);
-    const nodeIds = new Set(filteredNodes.map(n => n.id));
-    const filteredLinks = graphData.links.filter(link => nodeIds.has(link.source) && nodeIds.has(link.target));
-    return { nodes: filteredNodes, links: filteredLinks };
-  }, [graphData, activeFilter]);
+    setCollapsedNodes(newCollapsedNodes);
+  };
+
+  const displayedGraph = useMemo(() => {
+    const initialVisibleNodes = graphData.nodes.filter(node => nodeTypeFilters[node.type]);
+
+    if (collapsedNodes.size === 0) {
+      const initialVisibleNodeIds = new Set(initialVisibleNodes.map(n => n.id));
+      // FIX: Add null checks for link.source and link.target as they can be null.
+      const links = graphData.links.filter(link =>
+        initialVisibleNodeIds.has(typeof link.source === 'object' && link.source ? link.source.id : link.source) &&
+        initialVisibleNodeIds.has(typeof link.target === 'object' && link.target ? link.target.id : link.target)
+      );
+      return { nodes: initialVisibleNodes, links };
+    }
+
+    const adjList = new Map<string, string[]>();
+    // FIX: Add null checks for source and target before processing.
+    graphData.links.forEach(({ source, target }) => {
+      const sourceId = typeof source === 'object' && source ? source.id : source;
+      const targetId = typeof target === 'object' && target ? target.id : target;
+      if (sourceId && targetId) {
+        adjList.set(sourceId, [...(adjList.get(sourceId) || []), targetId]);
+        adjList.set(targetId, [...(adjList.get(targetId) || []), sourceId]);
+      }
+    });
+
+    const nodesToHide = new Set<string>();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const node of initialVisibleNodes) {
+        if (nodesToHide.has(node.id) || collapsedNodes.has(node.id)) continue;
+
+        const neighbors = adjList.get(node.id) || [];
+        const shouldHide = neighbors.length > 0 && neighbors.every(neighborId =>
+          collapsedNodes.has(neighborId) || nodesToHide.has(neighborId)
+        );
+
+        if (shouldHide) {
+          if (!nodesToHide.has(node.id)) {
+            nodesToHide.add(node.id);
+            changed = true;
+          }
+        }
+      }
+    }
+    
+    const finalNodes = initialVisibleNodes.filter(node =>
+      !collapsedNodes.has(node.id) && !nodesToHide.has(node.id)
+    );
+    const finalNodeIds = new Set(finalNodes.map(n => n.id));
+    
+    // FIX: Add null checks for link.source and link.target.
+    const finalLinks = graphData.links.filter(link => {
+       const sourceId = typeof link.source === 'object' && link.source ? link.source.id : link.source;
+       const targetId = typeof link.target === 'object' && link.target ? link.target.id : link.target;
+       return sourceId && targetId && finalNodeIds.has(sourceId) && finalNodeIds.has(targetId);
+    });
+
+    return { nodes: finalNodes, links: finalLinks };
+  }, [graphData, nodeTypeFilters, collapsedNodes]);
 
   return (
-    <div className="bg-codex-blue/30 border border-codex-blue rounded-xl flex flex-col h-full">
-      <div className="flex justify-between items-center p-3 border-b border-codex-blue">
-        <h3 className="text-lg font-serif font-bold text-codex-teal">UMP Graph</h3>
-        <button
-          onClick={onToggleVisibility}
-          className="p-1 text-gray-400 hover:text-white hover:bg-codex-blue rounded-full"
-          title={isVisible ? 'Collapse Graph' : 'Expand Graph'}
-        >
-          {isVisible ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          )}
-        </button>
+    <section className="mt-8 pt-6 border-t border-codex-blue">
+      <h3 className="text-xl font-serif font-bold text-codex-teal mb-4">Unified Metaphysics Pattern (UMP)</h3>
+      <GraphFilterControls
+        nodeTypes={nodeTypes}
+        filters={nodeTypeFilters}
+        onFilterChange={handleFilterChange}
+      />
+      <div className="h-96 w-full bg-codex-dark rounded-lg border border-codex-blue/50 relative overflow-hidden">
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading UMP Graph...</div>}>
+          <KnowledgeGraph3D
+            graphData={displayedGraph}
+            onNodeClick={handleNodeToggleCollapse}
+            onNodeRightClick={onNodeSelect}
+            collapsedNodes={collapsedNodes}
+          />
+        </Suspense>
       </div>
-      {isVisible && (
-        <>
-        {nodeTypes.length > 1 && (
-            <div className="p-2 border-b border-codex-blue">
-              <p className="text-xs text-gray-400 mb-2 px-1">Lenses:</p>
-              <div className="flex flex-wrap gap-1">
-                {nodeTypes.map(type => (
-                  <button 
-                    key={type}
-                    onClick={() => setActiveFilter(type)}
-                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${activeFilter === type ? 'bg-codex-teal text-codex-dark border-codex-teal' : 'bg-transparent border-codex-blue hover:bg-codex-blue/50'}`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        <div className="flex-grow relative">
-          <Suspense fallback={<LoadingSpinner />}>
-            <KnowledgeGraph3D graphData={filteredData} onNodeClick={onNodeClick} />
-          </Suspense>
-        </div>
-        </>
-      )}
-    </div>
+      <p className="text-xs text-gray-500 mt-2 text-center">Left-click a node to expand/collapse its branch. Right-click to open the Rabbit Hole inquiry.</p>
+    </section>
   );
 };
