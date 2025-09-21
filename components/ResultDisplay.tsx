@@ -1,36 +1,72 @@
-import React from 'react';
-import type { Source } from '../types';
+import React, { useState } from 'react';
+import type { KnowledgeGraphNode, ResearchResult } from '../types';
 import { SourceList } from './SourceList';
-import { Marked } from 'marked';
-import { markedHighlight } from "marked-highlight";
-import hljs from 'highlight.js';
-
-const marked = new Marked(
-  markedHighlight({
-    langPrefix: 'hljs language-',
-    highlight(code, lang) {
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-      return hljs.highlight(code, { language }).value;
-    }
-  })
-);
+import { KnowledgeGraphPanel } from './KnowledgeGraphPanel';
 
 interface ResultDisplayProps {
-  result: string;
-  sources: Source[];
-  isLoading: boolean;
+  result: ResearchResult;
+  onNodeClick: (node: KnowledgeGraphNode) => void;
 }
 
-export const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, sources, isLoading }) => {
-  const renderResult = () => {
-    const html = marked.parse(result) as string;
-    return <div className="prose prose-invert prose-lg max-w-none prose-p:text-slate-300 prose-headings:font-serif prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-violet-300 prose-headings:to-sky-300 prose-strong:text-violet-300 prose-a:text-sky-400 hover:prose-a:text-sky-300" dangerouslySetInnerHTML={{ __html: html }} />;
-  };
+export const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, onNodeClick }) => {
+  const { phenomenologicalSummary, metaphysicalFrameworkAnalysis, symbolicResonanceMapping, archetypeFrequencyAnalysis, technologyDeconstruction, firstPrinciplesHypothesis, experimentalProtocols, sources, knowledgeGraph } = result;
+  const [showGraph, setShowGraph] = useState(true);
 
   return (
-    <div className="p-6 sm:p-8 bg-slate-900/70 border border-slate-800 rounded-2xl shadow-2xl animate-fade-in w-full min-h-[300px]">
-      {renderResult()}
-      {!isLoading && sources.length > 0 && <SourceList sources={sources} />}
+    <div className="animate-fade-in space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className={` ${showGraph && knowledgeGraph.nodes.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'} transition-all duration-300`}>
+          <section>
+            <h2 className="text-3xl font-serif font-bold text-codex-teal mb-4">Phenomenological Summary</h2>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{phenomenologicalSummary}</p>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="text-2xl font-serif font-bold text-codex-teal mb-4">Metaphysical Framework Analysis</h3>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{metaphysicalFrameworkAnalysis}</p>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="text-2xl font-serif font-bold text-codex-teal mb-4">Symbolic Resonance Mapping</h3>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{symbolicResonanceMapping}</p>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="text-2xl font-serif font-bold text-codex-teal mb-4">Archetype Frequency Analysis</h3>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{archetypeFrequencyAnalysis}</p>
+          </section>
+
+          <div className="grid md:grid-cols-2 gap-8 mt-8">
+            <section>
+              <h3 className="text-xl font-serif font-bold text-codex-teal mb-4">'Technology' Deconstruction</h3>
+              <ul className="list-disc list-inside space-y-2 text-gray-300">
+                {technologyDeconstruction.map((tech, i) => <li key={i}>{tech}</li>)}
+              </ul>
+            </section>
+            <section>
+              <h3 className="text-xl font-serif font-bold text-codex-teal mb-4">First Principles Hypothesis</h3>
+              <ul className="list-disc list-inside space-y-2 text-gray-300">
+                {firstPrinciplesHypothesis.map((hypo, i) => <li key={i}>{hypo}</li>)}
+              </ul>
+            </section>
+          </div>
+          
+          <section className="mt-8">
+            <h3 className="text-xl font-serif font-bold text-codex-teal mb-4">Experimental Protocols</h3>
+            <ul className="list-disc list-inside space-y-2 text-gray-300">
+              {experimentalProtocols.map((protocol, i) => <li key={i}>{protocol}</li>)}
+            </ul>
+          </section>
+          
+          <SourceList sources={sources} />
+        </div>
+        
+        {knowledgeGraph.nodes.length > 0 && (
+          <div className="lg:col-span-1 min-h-[400px] lg:min-h-0">
+             <KnowledgeGraphPanel graphData={knowledgeGraph} isVisible={showGraph} onToggleVisibility={() => setShowGraph(!showGraph)} onNodeClick={onNodeClick} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

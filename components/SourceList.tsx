@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { Source } from '../types';
 
@@ -6,33 +5,56 @@ interface SourceListProps {
   sources: Source[];
 }
 
-export const SourceList: React.FC<SourceListProps> = ({ sources }) => {
-  const validSources = sources.filter(s => s.web && s.web.uri && s.web.title);
+const getConfidenceColor = (score: number) => {
+  if (score < 40) return 'bg-red-500';
+  if (score < 75) return 'bg-yellow-500';
+  return 'bg-green-500';
+};
 
-  if (validSources.length === 0) return null;
+export const SourceList: React.FC<SourceListProps> = ({ sources }) => {
+  if (!sources || sources.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="mt-8 pt-6 border-t border-slate-700/50">
-      <h3 className="text-xl font-serif font-bold text-violet-300 mb-4">Sources</h3>
-      <ul className="space-y-3">
-        {validSources.map((source, index) => (
-          <li key={index} className="flex items-start gap-3">
-            <span className="text-violet-400 mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </span>
-            <a
-              href={source.web!.uri}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sky-400 hover:text-sky-300 hover:underline transition-colors duration-200"
-            >
-              {source.web!.title}
-            </a>
+    <section className="mt-8 pt-6 border-t border-codex-blue">
+      <h3 className="text-xl font-serif font-bold text-codex-teal mb-4">Data Provenance & Sources</h3>
+      <ul className="space-y-4">
+        {sources.map((source, index) => (
+          <li key={index} className="bg-codex-blue/30 p-4 rounded-lg border border-codex-blue/50">
+            <h4 className="font-semibold text-codex-gold">
+              <a 
+                href={source.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:underline"
+              >
+                {source.title}
+              </a>
+            </h4>
+            
+            <div className="mt-2 group relative">
+              <div className="flex items-center">
+                <p className="text-xs text-gray-400 mr-2">Contextual Confidence:</p>
+                <div className="w-full bg-codex-dark rounded-full h-2.5 border border-codex-blue">
+                  <div 
+                    className={`${getConfidenceColor(source.confidenceScore)} h-2.5 rounded-full`} 
+                    style={{ width: `${source.confidenceScore}%` }}
+                  ></div>
+                </div>
+                 <p className="text-xs text-gray-300 ml-2">{source.confidenceScore}/100</p>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 w-full max-w-md p-2 text-xs text-white bg-codex-dark rounded-md border border-codex-teal/50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                <strong>Justification:</strong> {source.justification}
+              </div>
+            </div>
+
+            <p className="text-xs text-codex-teal/70 mt-3 truncate">
+              <a href={source.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{source.url}</a>
+            </p>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 };

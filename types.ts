@@ -1,46 +1,76 @@
-import type { GroundingChunk } from "@google/genai";
+import type { Part } from "@google/genai";
 
-export type Source = GroundingChunk;
+export type ResearchDepth = 'surface' | 'moderate' | 'deep';
 
-export interface GraphNode {
-  id: string; // The name of the concept/entity
-  group: 'Concept' | 'Figure' | 'Text' | 'Practice' | 'Location' | 'Organization' | 'Other'; // Type of node
-  connections: number; // Number of edges connected to this node
+export interface Source {
+  title: string;
+  url: string;
+  justification: string;
+  confidenceScore: number;
 }
 
-export interface GraphEdge {
-  source: string; // ID of the source node
-  target: string; // ID of the target node
-  label: string; // Description of the relationship
+export interface KnowledgeGraphNode {
+  id: string;
+  name: string;
+  type: string;
+  details: string;
 }
 
-export interface KnowledgeGraph {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
+export interface KnowledgeGraphLink {
+  source: string;
+  target: string;
+  relationship: string;
+}
+
+export interface KnowledgeGraphData {
+  nodes: KnowledgeGraphNode[];
+  links: KnowledgeGraphLink[];
+}
+
+export interface ResearchResult {
+  phenomenologicalSummary: string;
+  metaphysicalFrameworkAnalysis: string;
+  symbolicResonanceMapping: string;
+  archetypeFrequencyAnalysis: string;
+  technologyDeconstruction: string[];
+  firstPrinciplesHypothesis: string[];
+  experimentalProtocols: string[];
+  sources: Source[];
+  knowledgeGraph: KnowledgeGraphData;
 }
 
 export interface HistoryItem {
   id: string;
   topic: string;
-  result: string;
-  sources: Source[];
-  tags?: string[];
-  graph?: KnowledgeGraph;
-  bookmarked?: boolean;
+  timestamp: string;
+  result: ResearchResult;
+  imageName?: string;
 }
 
-export type ResearchDepth = 'surface' | 'moderate' | 'deep';
-export type SearchType = 'web' | 'deep';
-export type ModelProvider = 'gemini' | 'ollama';
+export type AiProvider = 'google' | 'ollama' | 'mistral' | 'cohere' | 'openrouter' | 'huggingface' | 'chutes';
 
-export interface Note {
-  id: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface Document {
-  id: string;
-  name: string;
-  content: string;
+export interface Settings {
+  provider: AiProvider;
+  apiKeys: {
+    mistral: string;
+    cohere: string;
+    openrouter: string;
+    huggingface: string;
+    chutes: string;
+  };
+  models: {
+    google: string;
+    ollama: string;
+    mistral: string;
+    cohere: string;
+    openrouter: string;
+    huggingface: string;
+    chutes: string;
+  };
+  ollama: {
+    serverUrl: string;
+    availableModels: string[];
+  };
+  theme: 'dark' | 'light';
+  showTooltips: boolean;
 }

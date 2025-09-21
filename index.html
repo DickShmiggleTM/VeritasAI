@@ -1,61 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Esoteric Veritas</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codex Veritas</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            colors: {
+              'codex-dark': '#0a0f1f',
+              'codex-blue': '#1a2c4a',
+              'codex-purple': '#4a3b8e',
+              'codex-gold': '#d4af37',
+              'codex-red': '#a42a2a',
+              'codex-teal': '#00d1b2',
+            },
             fontFamily: {
-              'sans': ['Inter', 'sans-serif'],
-              'serif': ['Cinzel', 'serif'],
+              sans: ['"Source Code Pro"', 'monospace'],
+              serif: ['"Playfair Display"', 'serif'],
             },
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out forwards',
-              'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
-              'background-shift': 'backgroundShift 20s ease-in-out infinite',
+              'glow': 'glow 2.5s ease-in-out infinite alternate',
             },
             keyframes: {
               fadeIn: {
-                '0%': { opacity: 0, transform: 'translateY(10px)' },
-                '100%': { opacity: 1, transform: 'translateY(0)' },
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
               },
-              pulseGlow: {
-                '0%, 100%': { boxShadow: '0 0 10px 0px rgba(167, 139, 250, 0.4)' },
-                '50%': { boxShadow: '0 0 20px 5px rgba(167, 139, 250, 0.6)' },
-              },
-              backgroundShift: {
-                '0%, 100%': { 'background-color': 'hsl(222, 83%, 5%)' }, /* slate-950 */
-                '50%': { 'background-color': 'hsl(244, 53%, 10%)' },
+               glow: {
+                'from': { 'text-shadow': '0 0 4px #00d1b2, 0 0 8px #00d1b2, 0 0 12px #00d1b2' },
+                'to': { 'text-shadow': '0 0 8px #4a3b8e, 0 0 16px #4a3b8e, 0 0 24px #4a3b8e' }
               }
             }
           }
         }
       }
     </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
-    "marked": "https://aistudiocdn.com/marked@^16.3.0",
-    "marked-highlight": "https://aistudiocdn.com/marked-highlight@^2.2.2",
-    "highlight.js": "https://aistudiocdn.com/highlight.js@^11.11.1"
-  }
-}
-</script>
-</head>
-  <body class="bg-slate-950 text-slate-300 animate-background-shift">
-    <div id="root"></div>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Source Code Pro', monospace;
+      }
+    </style>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react-force-graph-3d": "https://aistudiocdn.com/react-force-graph-3d@^1.29.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+        "react/": "https://aistudiocdn.com/react@^19.1.1/",
+        "react": "https://aistudiocdn.com/react@^19.1.1"
+      }
+    }
+    </script>
     <script type="module" src="/index.tsx"></script>
-  </body>
+</head>
+<body class="bg-codex-dark">
+    <div id="root"></div>
+</body>
 </html>
